@@ -26,7 +26,6 @@ var canvasMack = document.getElementById('canvasMack');
 var contextMack = canvasMack.getContext('2d');
 
 var mack;
-var mackLine = 5/2;
 var mackLocationReset;
 var roundStarted= false;
 
@@ -37,6 +36,8 @@ var carWidth = 128;
 var carHeight = 128;
 
 var k = 2;
+var m = 2 * k + 1;
+
 canvasRoad.width  = window.innerWidth;
 canvasRoad.height = window.innerHeight;
 canvasCars.width  = window.innerWidth;
@@ -78,7 +79,7 @@ function generateRoad() {
     }
     else if (roadColors[i] === 0) {
       var carsInit = {};
-      carsInit.x = sceneWidth * (right ? 1 : 0) - (carWidth / 2);
+      carsInit.x = sceneWidth * (right ? 1 : 0) -  carWidth * (right ? -1 : 1);
       carsInit.y = y - carHeight/3;
       carsInit.a = (right ? -1 : 1);
       carsInit.v = k * (right ? -1 : 1);
@@ -88,13 +89,14 @@ function generateRoad() {
       y = y+roadPart;
     }
     else {
-      mack = images.mack;
-      mackLocation.y = y - mack.width/2;
-      mackLocation.x = (sceneWidth - mack.width)/2;
-      contextMack.drawImage(mack, mackLocation.x, mackLocation.y);
+      mackLocation.y = y - images.mack.height/2;
+      mackLocation.x = (sceneWidth - images.mack.width)/2;
       mack = {
         x: mackLocation.x,
-        y: mackLocation.y
+        y: mackLocation.y,
+        line:5/2,
+        width: images.mack.width,
+        height:images.mack.height        
       };
       console.log(mack.x + ' ' + mack.y);
       mackLocationReset = mack.y;
@@ -133,22 +135,21 @@ function generateNewCars() {
 
 function moveMack(key) {
  
-  if (key.code === 'ArrowRight') {
-    mack.x += 2 * k + 1;
+  if (key.code === 'ArrowRight' && mack.x <= (sceneWidth - mack.width)) {
+    mack.x += m;
   }
-  if (key.code === 'ArrowLeft') {
-    mack.x -= 2 * k + 1;
+  if (key.code === 'ArrowLeft' && mack.x >= 0) {
+    mack.x -= m;
   }
-  if (key.code === 'ArrowUp') {
-    mackLine = Math.round(mackLine - 1);
-    mack.y = carsLocations[mackLine].y;
+  if (key.code === 'ArrowUp' && mack.line > 0) {
+    mack.line = Math.round(mack.line - 1);
+    mack.y = carsLocations[mack.line].y;
     roundStarted = true;
   }
-  if (key.code === 'ArrowDown') {
-    mackLine = Math.floor(mackLine + 1);
-    mack.y = carsLocations[mackLine].y;
+  if (key.code === 'ArrowDown' && mack.line < carsLocations.length - 1) {
+    mack.line = Math.floor(mack.line + 1);
+    mack.y = carsLocations[mack.line].y;
     roundStarted = true;
-
   }
   /*canvasMack.width = canvasMack.width;*/
 }
