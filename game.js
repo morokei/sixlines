@@ -7,7 +7,7 @@ var imageNames;
     'roadsurface',
     'grass',
     'roadline',
-    'mack'
+    'player'
   ];
   for (var i = 1; i <= 17; i++) {
     imageNames.push('car-' + i);
@@ -22,18 +22,18 @@ var contextRoad = canvasRoad.getContext('2d');
 var canvasCars = document.getElementById('canvasCars');
 var contextCars = canvasCars.getContext('2d');
 
-var canvasMack = document.getElementById('canvasMack');
-var contextMack = canvasMack.getContext('2d');
+var canvasPlayer = document.getElementById('canvasPlayer');
+var contextPlayer = canvasPlayer.getContext('2d');
 
-var mack;
-var mackLocationReset;
+var player;
+var playerLocation;
 var roundStarted= false;
 
-var carsLocations = [];
+var carLocations = [];
 var cars = [];
 
 var carWidth = 128;
-var carHeight = 128;
+var carHeight = 90;
 
 var k = 2;
 var m = 2 * k + 1;
@@ -42,17 +42,16 @@ canvasRoad.width  = window.innerWidth;
 canvasRoad.height = window.innerHeight;
 canvasCars.width  = window.innerWidth;
 canvasCars.height = window.innerHeight;
-canvasMack.width  = window.innerWidth;
-canvasMack.height = window.innerHeight;
+canvasPlayer.width  = window.innerWidth;
+canvasPlayer.height = window.innerHeight;
 
 var sceneWidth = canvasRoad.width;
 var sceneHeight = canvasRoad.height;
-var marginTop = sceneHeight/16;
-var roadPart = Math.floor(sceneHeight/8);
-var paintedLines = 4;
+var marginTop = sceneHeight/12;
+var roadPart = Math.floor(sceneHeight/9);
+var paintedLinesHeight = 4;
 
 /*var range = 150;*/
-var mackLocation = {};
 
 var score = 0;
 
@@ -63,7 +62,7 @@ window.setTimeout(function() {
 
 function generateRoad() {
   var y = marginTop;
-  var h = paintedLines;
+  var h = paintedLinesHeight;
   var right = true;
   var patterns = [];
   patterns.push(images.roadsurface);
@@ -75,7 +74,7 @@ function generateRoad() {
     contextRoad.fillRect(0, y, sceneWidth, h);
     if (roadColors[i] === 2) {
       h = roadPart;
-      y = y+paintedLines;
+      y = y+paintedLinesHeight;
     }
     else if (roadColors[i] === 0) {
       var carsInit = {};
@@ -84,32 +83,41 @@ function generateRoad() {
       carsInit.a = (right ? -1 : 1);
       carsInit.v = k * (right ? -1 : 1);
       k = k+(right ? 1 : -1);
-      carsLocations.push(carsInit);
-      h = paintedLines;
+      carLocations.push(carsInit);    
+      carsInit.line = carLocations.length - 1;
+      h = paintedLinesHeight;
       y = y+roadPart;
     }
     else {
-      mackLocation.y = y - images.mack.height/2;
-      mackLocation.x = (sceneWidth - images.mack.width)/2;
-      mack = {
-        x: mackLocation.x,
-        y: mackLocation.y,
-        line:5/2,
-        width: images.mack.width,
-        height:images.mack.height        
+      h = paintedLinesHeight;
+      playerLocation = {
+        x: (sceneWidth - images.player.width)/2,
+        y: y - images.player.height/2,
+        line: carLocations.length - 0.5
       };
-      console.log(mack.x + ' ' + mack.y);
-      mackLocationReset = mack.y;
-      h = paintedLines;
       y = y + roadPart;
       right = false;  
     }
   }
+  contextRoad.fillStyle = 'white';
+  contextPlayer.textAlign = 'end';
+  contextRoad.fillText(' Car and player images are designed by Freepik.com', 0, sceneHeight - 10);
+
+}
+
+function generatePlayer() {
+  player = {
+    x: playerLocation.x,
+    y: playerLocation.y,
+    line: playerLocation.line,
+    width:  images.player.width,
+    height: images.player.height  
+  };  
 }
 
 function generateNewCars() {
   var availableLocations = [];
-  for (var candidate of carsLocations) {
+  for (var candidate of carLocations) {
     if (!candidate.lastCar || Math.abs(candidate.lastCar.x - candidate.x) > carWidth){
       availableLocations.push(candidate);
     }
@@ -129,74 +137,94 @@ function generateNewCars() {
   };
   cars.push(car); 
   location.lastCar = car;
-  location.available = false;
 }
 
 
-function moveMack(key) {
+function movePlayer(key) {
  
-  if (key.code === 'ArrowRight' && mack.x <= (sceneWidth - mack.width)) {
-    mack.x += m;
+  if (key.code === 'ArrowRight' && player.x <= (sceneWidth - player.width)) {
+    player.x += m;
   }
-  if (key.code === 'ArrowLeft' && mack.x >= 0) {
-    mack.x -= m;
+  if (key.code === 'ArrowLeft' && player.x >= 0) {
+    player.x -= m;
   }
-  if (key.code === 'ArrowUp' && mack.line > 0) {
-    mack.line = Math.round(mack.line - 1);
-    mack.y = carsLocations[mack.line].y;
+  if (key.code === 'ArrowUp' && player.line > 0) {
+    player.line = Math.ceil(player.line - 1);
+    player.y = carLocations[player.line].y;
     roundStarted = true;
   }
-  if (key.code === 'ArrowDown' && mack.line < carsLocations.length - 1) {
-    mack.line = Math.floor(mack.line + 1);
-    mack.y = carsLocations[mack.line].y;
+  if (key.code === 'ArrowDown' && player.line < carLocations.length - 1) {
+    player.line = Math.floor(player.line + 1);
+    player.y = carLocations[player.line].y;
     roundStarted = true;
   }
-  /*canvasMack.width = canvasMack.width;*/
 }
 
+function detectCollision(car) {
+  if (player.line === car.location.line) {
+    if (player.x >= car.x && player.x <= car.x + carWidth - player.width/2) {
+      roundStarted = false;
+      startRound();
+      return true;
+    }
+  }
+  
+  return false;
+}
 
 function getRandomIntInclusive(min, max) {
   return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
 function startRound() {
+  score = 0;
+  cars = [];
+  for (var location of carLocations) {
+    location.lastCar = null;
+  }
+  generatePlayer();
+}
+
+function startTimers() {
   window.setInterval(function() {
     generateNewCars();
-  }, 800);
+  }, 600);
   
   window.setInterval(function() {
     for (var i = cars.length - 1; i >= 0; i--) {
       var car = cars[i];
       car.x += car.v; 
-
+      if (detectCollision(car)) {
+        return;
+      }
       if (Math.abs(car.x - car.start.x) >= sceneWidth + carWidth * 2) {
         if (car === car.location.lastCar) {
           car.location.lastCar = null;
         }
         cars.splice(i, 1);  
-        
         continue;
       }
-      
+    }
+    
+    if (roundStarted) {
+      score++;
     }
   }, 20);
-  
-  document.onkeydown = moveMack;
-  
+}
+
+function startDrawing() {
   window.requestAnimationFrame(function draw() {
     contextCars.clearRect(0, 0, sceneWidth, sceneHeight);
     for (var car of cars) {
       contextCars.drawImage(car.image, car.x, car.y);
     }
-    contextMack.clearRect(0, 0, sceneWidth, sceneHeight);
-    contextMack.drawImage(images.mack, mack.x, mack.y);
-    contextMack.font = '20px serif';
-    contextMack.textAlign = 'right';
-    contextMack.fillStyle = 'black';
-    contextMack.strokeText(score, sceneWidth-20, 20);
-    if (roundStarted) {
-      score++;
-    }
+    contextPlayer.clearRect(0, 0, sceneWidth, sceneHeight);
+    contextPlayer.drawImage(images.player, player.x, player.y);
+    contextPlayer.font = '20px serif';
+    contextPlayer.textAlign = 'right';
+    contextPlayer.fillStyle = 'white';
+    contextPlayer.fillText(score, sceneWidth-20, 20);
+    
     window.requestAnimationFrame(draw);
   });
 }
@@ -244,7 +272,10 @@ loadAllImages().then(function(loadedImages) {
     });
     
   generateRoad();
+  document.onkeydown = movePlayer;
   startRound();
+  startTimers();
+  startDrawing();
 });
 
 

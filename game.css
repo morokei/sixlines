@@ -8,6 +8,7 @@ html, body {
   padding: 0;
   margin: 0;
 }
+
 #canvasRoad {
   position: absolute;
   background-color: darkcyan;
@@ -20,7 +21,7 @@ html, body {
   z-index: 1;
 }
 
-#canvasMack {
+#canvasPlayer {
   position: absolute;
   background-color: transparent;
   z-index: 2;
