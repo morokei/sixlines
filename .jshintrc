@@ -1,0 +1,7 @@
+{
+  "browser": true,
+  "eqeqeq": true,
+  "eqnull": true,
+  "esnext": true,
+  "quotmark": true
+}
